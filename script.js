@@ -55,182 +55,26 @@ function convertQRISToDynamic(staticQRIS, amount) {
 
 function showQRIS() {
   document.getElementById("qrisModal").style.display = "block";
-  resetQRISModal();
+  // Langsung tampilkan QR code
+  const qrisImageElement = document.getElementById("qrisImage");
+  qrisImageElement.src = "qris-aisy.jpg";
+  qrisImageElement.classList.remove("dynamic");
+  document.getElementById("statusMessage").innerHTML = "";
 }
 
 function closeQRIS() {
   document.getElementById("qrisModal").style.display = "none";
-  resetQRISModal();
-}
-
-function resetQRISModal() {
-  // Reset to input step
-  showModalStep("inputStep");
-
-  // Clear input
-  document.getElementById("amountInput").value = "";
-
-  // Clear status message
-  document.getElementById("statusMessage").innerHTML = "";
-
-  // Reset image to static QRIS
-  const qrisImageElement = document.getElementById("qrisImage");
-  qrisImageElement.src = "qris-aisy.jpg";
-  qrisImageElement.classList.remove("dynamic");
-
-  // Reset download link data
-  currentQRISData = null;
-}
-
-function showModalStep(stepId) {
-  // Hide all steps
-  const steps = document.querySelectorAll(".modal-step");
-  steps.forEach((step) => step.classList.remove("active"));
-
-  // Show target step
-  document.getElementById(stepId).classList.add("active");
-}
-
-async function generateQRIS() {
-  const amountInput = document.getElementById("amountInput");
-  const amount = amountInput.value.trim();
-
-  // Parse number (remove dots)
-  const numericAmount = parseInt(amount.replace(/\./g, ""));
-
-  // Validation
-  if (!amount || isNaN(numericAmount) || numericAmount < 1) {
-    showToast("Minimal Rp 1 ya", "error");
-    return;
-  }
-
-  if (numericAmount > 10000000) {
-    showToast("Maksimal Rp 10.000.000", "error");
-    return;
-  }
-
-  // Show loading step
-  showModalStep("loadingStep");
-
-  try {
-    // konversi static qris ke dynamic qris
-    const dynamicQRISString = convertQRISToDynamic(QRIS_STATIC, numericAmount);
-
-    // online qr generator
-    const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(
-      dynamicQRISString
-    )}`;
-
-    const qrisImageElement = document.getElementById("qrisImage");
-    qrisImageElement.src = qrApiUrl;
-    qrisImageElement.classList.add("dynamic");
-
-    // simpan untuk download
-    currentQRISData = {
-      dataUrl: qrApiUrl,
-      amount: numericAmount,
-      type: "dynamic",
-      qrisString: dynamicQRISString,
-    };
-
-    // tampilkan pesan sukses
-    document.getElementById(
-      "statusMessage"
-    ).innerHTML = `<div class="success-message">
-      ✅ QRIS dinamis berhasil dibuat untuk Rp ${numericAmount.toLocaleString(
-        "id-ID"
-      )}
-    </div>`;
-
-    showToast(
-      `QRIS Rp ${numericAmount.toLocaleString("id-ID")} sudah siap!`,
-      "success"
-    );
-  } catch (error) {
-    console.error("QRIS Generation Error:", error);
-
-    // fallback ke dinamis qris
-    const qrisImageElement = document.getElementById("qrisImage");
-    qrisImageElement.src = "qris-aisy.jpg";
-    qrisImageElement.classList.remove("dynamic");
-
-    // simpan untuk download
-    currentQRISData = {
-      dataUrl: "qris-aisy.jpg",
-      amount: numericAmount,
-      type: "static",
-    };
-
-    // tampilkan pesan error
-    document.getElementById(
-      "statusMessage"
-    ).innerHTML = `<div class="error-message">⚠️ Gagal membuat QRIS statis. Menampilkan QRIS dinamis sebagai alternatif.</div>`;
-
-    showToast("Gagal membuat QRIS statis, pakai QRIS dinamis dulu ya", "error");
-  }
-
-  // tampilkan step hasil
-  showModalStep("resultStep");
 }
 
 async function downloadQRIS() {
-  if (!currentQRISData) {
-    // fallback ke dinamis
-    const link = document.createElement("a");
-    link.href = "qris-aisy.jpg";
-    link.download = "QRIS-Aisyah.jpg";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    showToast("QRIS berhasil didownload!", "success");
-    return;
-  }
-
-  if (currentQRISData.type === "dynamic") {
-    try {
-      // tampilkan pesan loading
-      showToast("Sedang menyiapkan download...", "default");
-
-      // fetch image dari API dan convert ke blob
-      const response = await fetch(currentQRISData.dataUrl);
-      const blob = await response.blob();
-
-      // buat object URL dari blob
-      const objectUrl = URL.createObjectURL(blob);
-
-      // download image
-      const link = document.createElement("a");
-      link.href = objectUrl;
-      link.download = `QRIS-Aisyah-Rp${parseInt(
-        currentQRISData.amount
-      ).toLocaleString("id-ID")}.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      // hapus object URL
-      URL.revokeObjectURL(objectUrl);
-
-      showToast(
-        `QRIS Rp ${parseInt(currentQRISData.amount).toLocaleString(
-          "id-ID"
-        )} berhasil didownload!`,
-        "success"
-      );
-    } catch (error) {
-      console.error("Download error:", error);
-      showToast("Gagal download QRIS, coba lagi ya", "error");
-    }
-  } else {
-    // download static qris
-    const link = document.createElement("a");
-    link.href = "qris-aisy.jpg";
-    link.download = "QRIS-Aisyah.jpg";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    showToast("QRIS berhasil didownload!", "success");
-  }
+  // download static qris
+  const link = document.createElement("a");
+  link.href = "qris-aisy.jpg";
+  link.download = "QRIS-Aisyah.jpg";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  showToast("QRIS berhasil didownload!", "success");
 }
 
 function copyToClipboard(number, bank) {
@@ -302,44 +146,6 @@ function formatAmountInput(input) {
     input.value = "";
   }
 }
-
-// enter key support dan format input
-document.addEventListener("DOMContentLoaded", function () {
-  const amountInput = document.getElementById("amountInput");
-  if (amountInput) {
-    // format di input
-    amountInput.addEventListener("input", function (e) {
-      formatAmountInput(e.target);
-    });
-
-    // hanya angka
-    amountInput.addEventListener("keypress", function (e) {
-      // allow enter untuk submit
-      if (e.key === "Enter") {
-        generateQRIS();
-        return;
-      }
-
-      // hanya angka
-      if (
-        !/[0-9]/.test(e.key) &&
-        !["Backspace", "Delete", "Tab", "Escape", "Enter"].includes(e.key)
-      ) {
-        e.preventDefault();
-      }
-    });
-
-    // paste
-    amountInput.addEventListener("paste", function (e) {
-      e.preventDefault();
-      const paste = (e.clipboardData || window.clipboardData).getData("text");
-      const numericValue = paste.replace(/[^0-9]/g, "");
-      if (numericValue) {
-        e.target.value = formatNumber(numericValue);
-      }
-    });
-  }
-});
 
 // close modal ketika klik di luar
 window.onclick = function (event) {
